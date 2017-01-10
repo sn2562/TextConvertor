@@ -18,8 +18,23 @@
 			//読み込まれた時に一度だけ実行
 			window.onload=createBox;
 
-			var translate = [["、","，",/、/g],["。","．",/。/g],["全角スペース削除","",/　/g],["¥","\\",/¥/g],["単語接続の-削除","",/- /g],["","Fig.",/Fig. /g]];//変換文字の一覧 [対象,結果,正規表現]
+			var translate = [["、","，",/、/g],["。","．",/。/g],["全角スペース削除","",/　/g],["¥","\\",/¥/g],["単語接続の-削除","",/- /g],["","Fig.",/Fig. /g]];
+			var checked = []
+			for(x in translate){
+				checked.push(0);
+			}
+
+			JSON.stringify(checked);
+			console.log("JSON.stringify",JSON.stringify(checked));
+
+			//変換文字の一覧 [対象,結果,正規表現]
 			var flag = 0;//全チェックボックスが生成済みかどうか
+
+			if(localStorage.length>0){
+				checked = JSON.parse(localStorage.getItem('setting'));//設定を読み込み
+			}else{//初回アクセス
+				localStorage.setItem('setting', JSON.stringify(checked));//設定を保存
+			}
 
 			//チェックボックス生成
 			function createBox(){
@@ -30,6 +45,9 @@
 					box.type = "checkbox";
 					box.value = translate[i][0];
 					box.name = "chbox"+i;
+					if(checked[i]==1){
+						box.checked = true;//チェックボックスにチェックを入れておく
+					}
 					//ラベルの生成
 					var label = document.createElement('label');
 					label.for = box.name;
@@ -55,21 +73,40 @@
 							}else{//正規表現が登録されていない場合
 								output = output.replace(translate[i][0],translate[i][1]);
 							}
+							checked[i] = 1;
+						}else{
+							checked[i] = 0;
 						}
 					}
+					//登録更新
+					localStorage.setItem('setting', JSON.stringify(checked));
 				}
 				//表示を書き換える
 				target = document.getElementById("outputText");
 				target.innerText = output;
 			}
 
-			$(document).on("click","input",function() { convertTxt(); });
+			//チェックボックスがチェックされた時
+			$(document).on("click","input",function() {
+				convertTxt();
+			});
+
+			//clearボタンが押されたらチェックボックスのチェックをすべてはずす
+			function clearChxbox(){
+				console.log("clearChxbox",checked.lenght);
+				for(var i=0;i<checked.length;i++){
+					document.chbox.elements[i].checked = false;//チェックを外す
+					checked[i]=0;//チェックの記録状態をすべて0に
+				}
+				localStorage.setItem('setting', JSON.stringify(checked));//登録更新
+			}
 		</script>
 
 		<div id="contents">
 			<!--			<h1>Text Converter</h1>-->
 			<form name="chbox" id="chbox">
 			</form>
+			<button type="button" class="btn btn-default" onclick="clearChxbox()">全てのチェックをはずす</button>
 
 			<h3>INPUT</h3>
 			<textarea class="text-area" id="inputText" onKeyUp="convertTxt()" name="input">チェックボックスに従って入力された文章中の単語を変換します。例えば[。]や[、]を[．][，]へ変換します。全角の空白[　]は削除されます。[¥]を[\]へ変換します。[contin- ue]のような場合は-を削除し、[Fig. 1]のような場合は間の空白を削除します。</textarea>
